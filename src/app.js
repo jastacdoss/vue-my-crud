@@ -1,0 +1,14 @@
+/**
+ * Created by: Jason Doss
+ * https://medium.com/the-web-tub/creating-your-first-vue-js-pwa-project-22f7c552fb34
+ */
+import Vue from 'vue'
+import App from './App.vue'
+
+Vue.config.productionTip = false
+
+new Vue({
+    el: '#app',
+    components: { App },
+    template: '<App/>'
+})
