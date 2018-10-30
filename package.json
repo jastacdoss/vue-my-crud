@@ -1,6 +1,6 @@
 {
   "name": "vue-my-crud",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vue.js Module to handle the boring CRUD operations. Provides slots for results and modal window for displaying form to edit data.",
   "main": "index.js",
   "scripts": {
