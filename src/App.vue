@@ -81,10 +81,6 @@
         props: {
             itemModel: String,
             itemName: String,
-            itemProp: {
-                type: Object,
-                default: null
-            },
             createPath: String,
             updatePath: String,
             deletePath: String,
@@ -235,7 +231,7 @@
                 this.item = {};
             },
             createItem(item = null) {
-                let createItem = this.itemProp || this.item;
+                let createItem = item || this.item;
                 let data = this.parseFormData(createItem);
 
                 // Submit data
