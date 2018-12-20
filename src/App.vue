@@ -18,6 +18,7 @@
                   :createItem="createItem"
                   :updateItem="updateItem"
                   :deleteItem="deleteItem"
+                  :saveItems="saveItems"
             ></slot>
         </div>
         <div class="crud-footer">
@@ -28,10 +29,11 @@
                     :title="title"
                     :visible.sync="showForm"
                     :close-on-click-modal="false"
-                    width="80%"
+                    :width="modalWidth + '%'"
                     custom-class="p-0"
                     top="2vh"
                     @open="$emit('modal-open')">
+                <slot name="header"></slot>
                 <slot name="modal"
                       :item="item"
                       :submitForm="submitForm"></slot>
@@ -81,14 +83,18 @@
         props: {
             itemModel: String,
             itemName: String,
+            basePath: String,
             createPath: String,
             updatePath: String,
             deletePath: String,
             getPath: String,
             seedResults: null,
-            parentItem: Object,
             additionalFields: Object,
             itemCallback: Object,
+            modalWidth: {
+                type: Number,
+                default: 80
+            },
             noModalFooter: {
                 type: Boolean,
                 default: true
@@ -97,6 +103,10 @@
                 type: Boolean,
                 default: true,
             },
+            catchErrors: {
+                type: Boolean,
+                default: true,
+            }
         },
         data() {
             return {
@@ -115,6 +125,9 @@
             // Create listeners
             this.$on('refresh', () => {
                 this.fetchItems();
+            });
+            this.$on('save-items', () => {
+                this.saveItems();
             });
             this.$on('create-form', (item) => {
                 this.createForm(item);
@@ -142,11 +155,7 @@
 
         computed: {
             path() {
-                return '/api/' + this.itemModel + 's';
-            },
-            parentPath() {
-                let parent = (this.parentItem ? '/' + this.parentItem.name + '/' + this.parentItem.id : '');
-                return this.path + parent;
+                return '/' + this.basePath + '/' + this.itemModel + 's';
             },
         },
 
@@ -180,41 +189,41 @@
                 }
 
                 // Otherwise fetch the items
-                var path = (this.getPath ? this.getPath : this.parentPath);
+                var path = (this.getPath ? this.getPath : this.path);
                 return axios.get(path)
                     .then((response) => {
                         this.results = response.data;
                         this.$emit('fetch-items');
                     })
                     .catch((response) => {
-                        this.$notify({
-                            message: 'Error retrieving items from database. Please contact an administrator.\n\r',
-                            type: 'danger'
-                        });
+                        if (this.catchErrors) {
+                            this.$notify({
+                                message: 'Error retrieving items from database. Please contact an administrator.\n\r',
+                                type: 'danger'
+                            });
+                        }
                     });
             },
             submitForm() {
                 this.formAction()
                     .then(response => {
                         this.item = {};
-                        this.fetchItems();
+                        // this.fetchItems(); Causing duplicate fetch
                     });
                 this.showForm = false;
                 this.showDeleteConfirm = false;
                 this.formAction = '';
             },
-            createForm(item = {}) {
+            createForm(item = {}, title = null) {
                 this.item = _.merge({}, item, this.additionalFields);
-                console.log(this.item);
-                this.title = 'New ' + this.itemName;
+                this.title = title || 'New ' + this.itemName;
                 this.showForm = true;
                 this.formAction = this.createItem;
             },
-            editForm(item) {
+            editForm(item, title = null) {
                 this.item = JSON.parse(JSON.stringify(_.merge(item, this.additionalFields))); // Create a new instance for the item, intentionally breaks reactivity
-                console.log(this.item);
                 this.formAction = this.updateItem;
-                this.title = 'Update ' + this.itemName;
+                this.title = title || 'Update ' + this.itemName;
                 this.showForm = true;
             },
             deleteForm(item, message = null) {
@@ -235,7 +244,7 @@
                 let data = this.parseFormData(createItem);
 
                 // Submit data
-                var path = (this.createPath ? this.createPath : this.parentPath);
+                var path = (this.createPath ? this.createPath : this.path);
                 return axios.post(path, data, {headers: {'Content-Type': 'multipart/form-data'}})
                     .then(response => {
                         this.$notify({
@@ -247,10 +256,12 @@
                         this.$emit('item-saved', response.data);
                     })
                     .catch((response) => {
-                        this.$notify({
-                            message: 'Error saving item to database. Please contact an administrator.\n\r',
-                            type: 'danger'
-                        });
+                        if (this.catchErrors) {
+                            this.$notify({
+                                message: 'Error saving ' + this.model + ' to database. Please contact an administrator.\n\r',
+                                type: 'danger'
+                            });
+                        }
                     });
             },
             updateItem(item = null) {
@@ -272,10 +283,12 @@
                         this.$emit('item-saved');
                     })
                     .catch((response) => {
-                        this.$notify({
-                            message: 'Error updating item to database. Please contact an administrator.\n\r',
-                            type: 'danger'
-                        });
+                        if (this.catchErrors) {
+                            this.$notify({
+                                message: 'Error updating ' + this.model + ' to database. Please contact an administrator.\n\r',
+                                type: 'danger'
+                            });
+                        }
                     });
             },
             deleteItem(item = null) {
@@ -290,10 +303,12 @@
                         this.$emit('item-deleted', this.item);
                     })
                     .catch((response) => {
-                        this.$notify({
-                            message: 'Error deleting item from database. Please contact an administrator.\n\r',
-                            type: 'danger'
-                        });
+                        if (this.catchErrors) {
+                            this.$notify({
+                                message: 'Error deleting ' + this.model + ' from database. Please contact an administrator.\n\r',
+                                type: 'danger'
+                            });
+                        }
                     });
             },
             pushItem(item) {
@@ -306,20 +321,23 @@
                 }
                 this.$emit('item-popped');
             },
-            saveItems() {
+            saveItems(items = null) {
+                let results = items || this.results;
                 let promises = [];
 
-                _.forEach(this.results, (data, key) => {
+                _.forEach(results, (data, key) => {
                     let item = this.parseFormData(data);
 
                     // Submit data
-                    var path = (this.createPath ? this.createPath : this.parentPath);
+                    var path = (this.createPath ? this.createPath : this.path);
                     promises.push(axios.post(path, item, {headers: {'Content-Type': 'multipart/form-data'}})
                         .catch((response) => {
-                            this.$notify({
-                                message: 'Error saving item to database. Please contact an administrator.\n\r',
-                                type: 'danger'
-                            });
+                            if (this.catchErrors) {
+                                this.$notify({
+                                    message: 'Error saving ' + this.model + ' to database. Please contact an administrator.\n\r',
+                                    type: 'danger'
+                                });
+                            }
                             return false;
                         })
                     )
@@ -332,6 +350,7 @@
                             message: this.itemName + ' items saved successfully.',
                             type: 'success'
                         });
+
                         this.$emit('items-saved');
                     });
             }
