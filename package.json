@@ -4,7 +4,8 @@
   "description": "Vue.js Module to handle the boring CRUD operations. Provides slots for results and modal window for displaying form to edit data.",
   "main": "src/wrapper.js",
   "scripts": {
-    "dev": "webpack-dev-server --progress --colors --inline --hot"
+    "dev": "webpack-dev-server --progress --colors --inline --hot",
+    "build": "vue-cli-service build"
   },
   "repository": {
     "type": "git",
