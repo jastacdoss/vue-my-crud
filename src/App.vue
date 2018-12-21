@@ -67,6 +67,9 @@
                 <n-button type="danger" round="" @click.native="submitForm()">Delete</n-button>
             </template>
         </modal>
+
+
+        <button class="btn btn-primary" @click="showDeleteConfirm = true">test</button>
     </div>
 </template>
 <script>

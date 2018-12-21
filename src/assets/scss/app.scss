@@ -1,0 +1,12 @@
+// Import bootstrap core :: moved from dashboard-plugin import
+@import '~bootstrap/scss/bootstrap.scss';
+@import 'variables.scss';
+@import 'element_variables.scss';
+
+@import 'mixins/modals';
+@import 'mixins/inputs';
+@import 'mixins/transparency';
+
+@import 'modals';
+
+
